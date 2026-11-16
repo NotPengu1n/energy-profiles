@@ -76,6 +76,23 @@ class FakeApi extends WindowsApi {
 }
 
 void main() {
+  test('Battery estimate handles units and missing discharge', () {
+    const battery = BatteryStats(
+      dischargeMilliwatts: 7980,
+      remainingMilliwattHours: 50689,
+    );
+    expect(battery.dischargeWatts, 7.98);
+    expect(battery.remainingWh, 50.689);
+    expect(battery.estimatedMinutes, 381);
+    expect(
+      const BatteryStats(
+        dischargeMilliwatts: 0,
+        remainingMilliwattHours: 50000,
+      ).estimatedMinutes,
+      isNull,
+    );
+    expect(const BatteryStats().estimatedMinutes, isNull);
+  });
   test('Brightness survives saving and older profiles remain compatible', () {
     final profiles = defaultProfiles(testSystem);
     final changed = profiles.first.copyWith(brightness: 35);
@@ -112,7 +129,7 @@ void main() {
       expect(profiles.map((p) => p.name), [
         'Суперэкономия',
         'Экономия',
-        'Производительность',
+        'Плавность',
       ]);
       expect(profiles.every((p) => p.supported(testSystem)), isTrue);
       expect(profiles[0].mode, const DisplayMode(1280, 720, 60));
@@ -188,7 +205,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Суперэкономия'), findsOneWidget);
     expect(find.text('Экономия'), findsOneWidget);
-    expect(find.text('Производительность'), findsOneWidget);
+    expect(find.text('Плавность'), findsOneWidget);
     expect(
       tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
       isTrue,

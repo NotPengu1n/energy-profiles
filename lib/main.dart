@@ -293,30 +293,9 @@ class _ProfilesPageState extends State<ProfilesPage> {
                           header(),
                           const SizedBox(height: 24),
                           currentStatus(),
-                          const SizedBox(height: 28),
-                          Row(
-                            children: [
-                              const Text(
-                                'ТРИ РЕЖИМА. ОДНО НАЖАТИЕ.',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  letterSpacing: 2.2,
-                                  color: muted,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const Spacer(),
-                              if (busy)
-                                const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                            ],
-                          ),
                           const SizedBox(height: 14),
+                          batteryPanel(),
+                          const SizedBox(height: 28),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -492,6 +471,73 @@ class _ProfilesPageState extends State<ProfilesPage> {
                 ? 'От батареи${system!.batteryPercent <= 100 ? ' · ${system!.batteryPercent}%' : ''}'
                 : 'От сети',
             style: const TextStyle(color: muted, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget batteryPanel() {
+    final battery = system!.battery;
+    Widget metric(String title, String value) => SizedBox(
+      width: 230,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: muted, fontSize: 12)),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 23,
+              color: accent,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+    final minutes = battery?.estimatedMinutes;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 24,
+            runSpacing: 18,
+            children: [
+              metric(
+                'Текущий расход',
+                battery?.dischargeWatts == null
+                    ? '—'
+                    : '${battery!.dischargeWatts!.toStringAsFixed(1)} Вт',
+              ),
+              metric(
+                'Осталось энергии',
+                battery?.remainingWh == null
+                    ? '—'
+                    : '${battery!.remainingWh!.toStringAsFixed(1)} Вт·ч',
+              ),
+              metric(
+                'Примерно осталось',
+                minutes == null
+                    ? '—'
+                    : '${minutes ~/ 60} ч ${minutes % 60} мин',
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            !system!.onBattery
+                ? 'От сети: оценка автономности появится при разряде батареи.'
+                : 'Оценка по текущему расходу, а не гарантированное время работы. Обновляется каждые 5 секунд.',
+            style: const TextStyle(color: muted, fontSize: 12, height: 1.4),
           ),
         ],
       ),

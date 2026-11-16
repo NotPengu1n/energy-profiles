@@ -249,11 +249,23 @@ EnergyBackend::Value EnergyBackend::Snapshot() {
   DWORD threshold_ac=0, threshold_dc=0;
   const bool available = ReadThresholds(active,&threshold_ac,&threshold_dc);
   M thresholds;
+  V battery_value;
+  SYSTEM_BATTERY_STATE battery{};
+  if (CallNtPowerInformation(SystemBatteryState,nullptr,0,&battery,sizeof(battery)) == 0 && battery.BatteryPresent) {
+    V remaining, discharge;
+    if (battery.RemainingCapacity != 0xFFFFFFFF) remaining = V(static_cast<int64_t>(battery.RemainingCapacity));
+    if (!battery.AcOnLine && battery.Discharging && battery.Rate != 0x80000000 && battery.Rate != 0xFFFFFFFF && battery.Rate != 0) {
+      const int64_t rate = static_cast<LONG>(battery.Rate);
+      discharge = V(rate < 0 ? -rate : rate);
+    }
+    battery_value = V(M{{V("remainingMilliwattHours"),remaining},{V("dischargeMilliwatts"),discharge}});
+  }
   for (const auto& item : normal_thresholds_) thresholds.emplace(V(item.first),V(M{{V("ac"),V(static_cast<int>(item.second.ac))},{V("dc"),V(static_cast<int>(item.second.dc))}}));
   return V(M{{V("monitors"),V(monitors)}, {V("saverAvailable"),V(available)},
     {V("saverActive"),V(energy_status_.value() > 0)}, {V("energySaverStatus"),V(energy_status_.value())},
     {V("onBattery"),V(supply.ACLineStatus == 0)}, {V("batteryPercent"),V(static_cast<int>(supply.BatteryLifePercent))},
     {V("normalEnergyThresholds"),V(thresholds)},
+    {V("battery"),battery_value},
     {V("powerName"),V(PlanName(active) + (modern ? " · " + ModeName(current_mode) : ""))},
     {V("normalPowerScheme"),V(GuidText(normal_power_))}, {V("normalAcMode"),V(GuidText(normal_ac_))},
     {V("normalDcMode"),V(GuidText(normal_dc_))}, {V("powerDescription"),V(description)}});

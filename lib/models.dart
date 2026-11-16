@@ -89,6 +89,26 @@ class DisplayMonitor {
         ..sort((a, b) => a.hz.compareTo(b.hz));
 }
 
+class BatteryStats {
+  const BatteryStats({this.dischargeMilliwatts, this.remainingMilliwattHours});
+  final int? dischargeMilliwatts, remainingMilliwattHours;
+  factory BatteryStats.fromMap(Map data) => BatteryStats(
+    dischargeMilliwatts: data['dischargeMilliwatts'] as int?,
+    remainingMilliwattHours: data['remainingMilliwattHours'] as int?,
+  );
+  double? get dischargeWatts =>
+      dischargeMilliwatts != null && dischargeMilliwatts! > 0
+      ? dischargeMilliwatts! / 1000
+      : null;
+  double? get remainingWh =>
+      remainingMilliwattHours != null && remainingMilliwattHours! >= 0
+      ? remainingMilliwattHours! / 1000
+      : null;
+  int? get estimatedMinutes => dischargeWatts == null || remainingWh == null
+      ? null
+      : (remainingWh! / dischargeWatts! * 60).floor();
+}
+
 class SystemSnapshot {
   const SystemSnapshot({
     required this.monitors,
@@ -100,6 +120,7 @@ class SystemSnapshot {
     this.normalDcMode = '',
     this.normalEnergyThresholds = const {},
     this.onBattery = false,
+    this.battery,
     this.batteryPercent = 255,
     this.energySaverStatus = 0,
     this.powerDescription =
@@ -111,6 +132,7 @@ class SystemSnapshot {
   final String normalAcMode, normalDcMode, powerDescription;
   final ThresholdMap normalEnergyThresholds;
   final bool onBattery;
+  final BatteryStats? battery;
   final int batteryPercent, energySaverStatus;
   factory SystemSnapshot.fromMap(Map<dynamic, dynamic> data) => SystemSnapshot(
     monitors: (data['monitors'] as List)
@@ -124,6 +146,9 @@ class SystemSnapshot {
     normalDcMode: data['normalDcMode'] as String? ?? '',
     normalEnergyThresholds: readThresholds(data['normalEnergyThresholds']),
     onBattery: data['onBattery'] as bool? ?? false,
+    battery: data['battery'] is Map
+        ? BatteryStats.fromMap(data['battery'] as Map)
+        : null,
     batteryPercent: data['batteryPercent'] as int? ?? 255,
     energySaverStatus: data['energySaverStatus'] as int? ?? -1,
     powerDescription: data['powerDescription'] as String? ?? '',
@@ -135,7 +160,7 @@ class SystemSnapshot {
 const profileNames = {
   'super': 'Суперэкономия',
   'eco': 'Экономия',
-  'performance': 'Производительность',
+  'performance': 'Плавность',
 };
 
 class EnergyProfile {
